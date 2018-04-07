@@ -1,5 +1,5 @@
 DRPXconfig = {
-  pxSize: 2
+  pxSize: 3
 };
 
 pxCount = 1;
@@ -12,14 +12,30 @@ vec2 = function (x, y = undefined) {
   if (x.x && x.y) {
     return vec2(x.x, x.y);
   }
+  if (y === undefined) {
+    y = x;
+  }
   return { x: x, y: y };
 }
 
 vec2Add = function (a, b) {
-  return vec2(
-    a.x + b.x,
-    a.y + b.y
-  );
+  return vec2(a.x + b.x, a.y + b.y);
+};
+
+vec2Sub = function (a, b) {
+  return vec2(a.x - b.x, a.y - b.y);
+};
+
+vec2Dot = function (a, b) {
+  return a.x * b.x + a.y * b.y;
+};
+
+vec2Mod = function (v, m) {
+  return vec2(v.x%m, v.y%m);
+};
+
+vec2Floor = function (v) {
+  return vec2(floor(v.x), floor(v.y));
 };
 
 sin = Math.sin;
@@ -31,6 +47,8 @@ sqrt = Math.sqrt;
 round = Math.round;
 floor = Math.floor;
 ceil = Math.ceil;
+max = Math.max;
+min = Math.min;
 
 clamp = function (val, min = 0, max = 1) {
   if (val < min) return min;
