@@ -1,10 +1,8 @@
 DRPXconfig = {
-  pxSize: 3,
-  threadsCount: 8
+  pxSize: 3
 };
 
 pxCount = 1;
-
 
 // Math and Helpers
 vec2 = function (x, y = undefined) {
@@ -40,21 +38,17 @@ vec2Floor = function (v) {
   return vec2(floor(v.x), floor(v.y));
 };
 
-var mathAliases = function () {
-  sin = Math.sin;
-  cos = Math.cos;
-  abs = Math.abs;
-  PI = Math.PI;
-  PI2 = PI * 2;
-  sqrt = Math.sqrt;
-  round = Math.round;
-  floor = Math.floor;
-  ceil = Math.ceil;
-  max = Math.max;
-  min = Math.min;
-};
-
-mathAliases();
+sin = Math.sin;
+cos = Math.cos;
+abs = Math.abs;
+PI = Math.PI;
+PI2 = PI * 2;
+sqrt = Math.sqrt;
+round = Math.round;
+floor = Math.floor;
+ceil = Math.ceil;
+max = Math.max;
+min = Math.min;
 
 clamp = function (val, min = 0, max = 1) {
   if (val < min) return min;
@@ -151,13 +145,6 @@ var sprite = (sprite, uv, center) => {
   );
   return sprite.data[spriteUV.y * sprite.width + spriteUV.x];
 }
-
-var helpers = {
-  vec2, vec2Add, vec2Sub, vec2Dot, vec2Mod, vec2Floor,
-  mathAliases,
-  clamp, normalize, modulate, smoothstep, distance, fract,
-  sprite
-};
 
 
 // Color
@@ -383,29 +370,9 @@ class DRPX {
     this.size = size;
     this.paletteId = paletteId;
     this.frag = frag;
-    this.createWorkers();
     this.playing = false;
     this.loop = this.loop.bind(this);
-    this.paint = this.paint.bind(this);
     this.preRenderMasks();
-  }
-  createWorkers () {
-    this.workers = [];
-    for (var i = 0; i < DRPXconfig.threadsCount; i++) {
-      this.workers[i] = operative(this.createWorker());
-    }
-  }
-  createWorker () {
-    return Object.assign({
-      frag: this.frag,
-      run: function (uv, time, done) {
-        var deferred = this.deferred();
-        deferred.fulfill({
-          color: frag(uv, time),
-          uv: uv
-        });
-      }
-    }, helpers);
   }
   preRenderMasks () {
     var ctx = this.ctx;
@@ -449,41 +416,20 @@ class DRPX {
     return this;
   }
   loop (ms) {
-    this.calcPaint();
-    //if (this.playing) {
-    //  requestAnimationFrame(this.loop);
-    //}
-  }
-  calcPaint () {
-    var time = performance.now();
-    var pxSize = DRPXconfig.pxSize;
-    pxCount = this.size / pxSize;
-    var ctx = this.ctx;
-    var promises = [];
-    var i = 0;
-    for (var u = 0; u < pxCount; u++) {
-      for (var v = 0; v < pxCount; v++) {
-        promises.push(
-          this.workers[i%DRPXconfig.threadsCount].run(vec2(u/pxCount, v/pxCount), time / 1000)
-        );
-        i++;
-      }
+    this.paint(ms);
+    if (this.playing) {
+      requestAnimationFrame(this.loop);
     }
-    Promise.all(promises).then(this.paint);
   }
-  paint (result) {
+  paint (time) {
     var pxSize = DRPXconfig.pxSize;
     pxCount = this.size / pxSize;
     var ctx = this.ctx;
-    var indexedResult = {};
-    result.forEach(function (r) {
-      indexedResult[''+r.uv.y * pxCount + r.uv.x] = r.color;
-    });
+
     for (var u = 0; u < pxCount; u++) {
       for (var v = 0; v < pxCount; v++) {
         var uv = vec2(u / pxCount, v / pxCount);
-        debugger
-        var value = indexedResult[''+uv.y * pxCount + uv.x];
+        var value = this.frag(uv, time / 1000);
         var color = getColor(value, uv, this.paletteId);
         this.ctx.fillStyle = color;
         this.templates.forEach(function (template) {
@@ -500,7 +446,9 @@ class DRPX {
     this.templates.forEach(function (template) {
       if (!template.maskImage) return;
       ctx.drawImage(template.maskImage, template[0], template[1]);
+
+      //ctx.putImageData(template.maskData, template[0], template[1]);
+      //drawMask[template[2]](ctx, vec2(template[0], template[1]), size, template[3]);
     });
-    if (this.playing) this.calcPaint();
-   }
+  }
 }
